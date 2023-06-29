@@ -1,21 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { Entry, Patient } from "../../types";
+import { Diagnosis, Patient } from "../../types";
 import patientService from "../../services/patients";
+import diagnosisService from "../../services/diagnoses";
 import { useParams } from "react-router-dom";
-
-const EntryInfo = ({entry} : {entry: Entry}) => (
-  <>
-    <p>{entry.date} <i>{entry.description}</i></p>
-    {entry.diagnosisCodes && <ul> 
-        {entry.diagnosisCodes.map(code => <li key={code}>{code}</li>)} 
-      </ul>
-    }
-  </>
-)
 
 const PatientPage = () => {
   const [patient, setPatient] = useState<Patient>();
+  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([])
   let { patientId } = useParams();
 
   useEffect(() => {
@@ -25,8 +17,20 @@ const PatientPage = () => {
         setPatient(patient);
       }
     };
+
     void fetchPatient();
+
+    const fetchDiagnoses = async () => {
+      const diagnoses = await diagnosisService.getAll();
+      setDiagnoses(diagnoses);
+    };
+    void fetchDiagnoses();
   }, [patientId]);
+
+  const diagnosisDescription = (code: string): string => {
+    const diagnosis = diagnoses.find(d => d.code === code);
+    return diagnosis ? diagnosis.name : "";
+  }
 
   return (
     <div>
@@ -40,18 +44,21 @@ const PatientPage = () => {
       <h3>Entries</h3>
       {(patient && patient.entries.length !== 0) 
         ? <>
-            {patient.entries.map(item => <EntryInfo key={item.id} entry={item} />)} 
+            {patient.entries.map(entry => 
+              <div key={entry.id}>
+                <p>{entry.date} <i>{entry.description}</i></p>
+                {entry.diagnosisCodes && <ul>
+                  {entry.diagnosisCodes.map(code => <li key={code}>
+                    {code} {diagnosisDescription(code)}
+                  </li>
+                  )}
+                </ul>}
+              </div>
+            )} 
           </>
         : 'Patient has no entries yet.'}
     </div>
   );
 };
-
-/*
-
-<>{patient.entries.map(entry => {
-            <P>{entry.}</P>
-          })}
-          </>*/
 
 export default PatientPage;
